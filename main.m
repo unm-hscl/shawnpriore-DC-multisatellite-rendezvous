@@ -109,7 +109,7 @@ scaled_sigma_c_vec = norms(target_set_c.A * sqrt_cov_X_c_sans_input',2,2);
 pwa_accuracy = 1e-3; % Set the maximum piecewise-affine overapproximation error to 1e-3
 [invcdf_approx_m, invcdf_approx_c, lb_delta_i] = computeNormCdfInvOverApprox(0.5, pwa_accuracy, n_lin_state_a);
 
-%%  
+%%  Optimization Parameters
 kmax = 200;
 k = 1;
 
@@ -122,7 +122,12 @@ tau = [.1; zeros(kmax -1, 1)];
 tau_max = 20;
 gamma = 1.05;
 
-%%
+input_cost = [1e20; zeros(kmax,1)];
+lambda_sum = [1e20; zeros(kmax,1)];
+total_cost = [1e40; zeros(kmax,1)];
+r = 5;
+
+%% Initial Condition
 U_a_p = -ones(size(Cu,2),1);
 U_b_p = -ones(size(Cu,2),1);
 U_c_p = -ones(size(Cu,2),1);
@@ -130,18 +135,12 @@ mean_X_a = mean_X_a_sans_input + Cu * U_a_p;
 mean_X_b = mean_X_b_sans_input + Cu * U_b_p;
 mean_X_c = mean_X_c_sans_input + Cu * U_c_p;
 
+%% Collection of solutions
 U_a_storage = zeros(size(Cu,2),kmax);
 U_b_storage = zeros(size(Cu,2),kmax);
 U_c_storage = zeros(size(Cu,2),kmax);
 
-%%
-input_cost = [1e20; zeros(kmax,1)];
-lambda_sum = [1e20; zeros(kmax,1)];
-total_cost = [1e40; zeros(kmax,1)];
-r = 5;
-
-%%
-
+%% Optimization Problem
 cvx_solver mosek
 cvx_precision default
 tic;
@@ -194,8 +193,6 @@ while k <= kmax
             0 - (-del_g_ab * [U_a - U_a_p;U_b - U_b_p]) <= log(epsilon_collision ./ eps_ab) .* g_ab + lambda_i_ab;
             0 - (-del_g_ac * [U_a - U_a_p;U_c - U_c_p]) <= log(epsilon_collision ./ eps_ac) .* g_ac + lambda_i_ac;
             0 - (-del_g_bc * [U_b - U_b_p;U_c - U_c_p]) <= log(epsilon_collision ./ eps_bc) .* g_bc + lambda_i_bc;
-            
-            
             
             % Terminal state constraint
             for delta_i_indx = 1:n_lin_state_a
@@ -251,77 +248,16 @@ time = toc;
 k = min(k, kmax);
 
 fprintf('Complete \n');
-fprintf('Computation time: %f \n', time);
+fprintf('Computation time (min): %f \n', time / 60);
 fprintf('Locally Optimal Cost: %f \n', total_cost(k+1));
 
+%% Choose itteration to plot (if needed)
+% sn = 200;
+% mean_X_a = mean_X_a_sans_input + Cu * U_a_storage(:,sn);
+% mean_X_b = mean_X_b_sans_input + Cu * U_b_storage(:,sn);
+% mean_X_c = mean_X_c_sans_input + Cu * U_c_storage(:,sn); 
 
-%% Graph of movement
-sn = 200;
-mean_X_a = mean_X_a_sans_input + Cu * U_a_storage(:,sn);
-mean_X_b = mean_X_b_sans_input + Cu * U_b_storage(:,sn);
-mean_X_c = mean_X_c_sans_input + Cu * U_c_storage(:,sn); 
-
-
-all_a = [x_0_a; mean_X_a];
-all_b = [x_0_b; mean_X_b];
-all_c = [x_0_c; mean_X_c];
-
-figure();
-hold on
-plot(all_a(1:4:end), all_a(2:4:end), 'g-o');
-plot(all_b(1:4:end), all_b(2:4:end), 'b-o');
-plot(all_c(1:4:end), all_c(2:4:end), 'r-o');
-drawnow()
-hold off
-
-title('Motion Path', 'interpreter', 'latex')
-xlabel('$x$ (in meters)', 'interpreter', 'latex')
-ylabel('$y$ (in meters)', 'interpreter', 'latex')
-legend({'Vehicle A','Vehicle B','Vehicle C'}, 'interpreter', 'latex');
-
-
-axis([-200 200 -200 200])
-%% Cost over recent itterations
-figure();
-c = min(k-1, 30);
-hold on
-plot((k-c:k), input_cost(k-c+1:k+1),'k-');
-plot((k-c:k), lambda_sum(k-c+1:k+1),'b-');
-plot((k-c:k), total_cost(k-c+1:k+1),'r-');
-drawnow()
-hold off
-
-title('Costs Over Recent Itterations', 'interpreter', 'latex');
-xlabel('Itteration, $k$', 'interpreter', 'latex');
-ylabel('Cost', 'interpreter', 'latex');
-legend({'Input Cost','Slack Cost','Total Cost'}, 'interpreter', 'latex');
-
-axis([k-c-1 k+1 0 1.1*max(total_cost(2:end))])
-
-%% Graph of distance at each time point
-dist_ab = zeros(time_horizon,1);
-dist_ac = zeros(time_horizon,1);
-dist_bc = zeros(time_horizon,1);
-
-for i = 0:time_horizon
-   dist_ab(i+1) = norm(all_a((1:2)+(i*4))- all_b((1:2)+(i*4)), Inf);
-   dist_ac(i+1) = norm(all_a((1:2)+(i*4))- all_c((1:2)+(i*4)), Inf);
-   dist_bc(i+1) = norm(all_b((1:2)+(i*4))- all_c((1:2)+(i*4)), Inf);
-end
-
-figure();
-hold on
-plot(dist_ab,'r-o');
-plot(dist_ac,'g-o');
-plot(dist_bc,'b-o');
-plot(r*ones(time_horizon+1,1),'k-');
-drawnow()
-hold off
-
-title('$L_\infty$ Distance Between Vehicles', 'interpreter', 'latex');
-xlabel('Time Step, $t$', 'interpreter', 'latex');
-ylabel('Distance (in meters)', 'interpreter', 'latex');
-legend({'$||A-B||_\infty$','$||A-C||_\infty$','$||B-C||_\infty$',strcat('R=', num2str(r))}, 'interpreter', 'latex');
-
-
-axis([-1 time_horizon+2 0 1.1*max([dist_ab;dist_ac;dist_bc])])
+%% Make Grpahs
+motion_path_graph
+cost_graph
+distance_graph
