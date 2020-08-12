@@ -20,4 +20,5 @@ ylabel('$y$ (in meters)', 'interpreter', 'latex')
 legend({'Vehicle A','Vehicle B','Vehicle C'}, 'interpreter', 'latex');
 
 % Center graph
-axis([-200 200 -200 200])
+m = 150;
+axis([-m m -m m])

@@ -1,11 +1,10 @@
 %% Cost over recent itterations
 % Plot costs
 figure();
-c = min(k-1, 30);
 hold on
-plot((k-c:k), input_cost(k-c+1:k+1),'k-');
-plot((k-c:k), lambda_sum(k-c+1:k+1),'b-');
-plot((k-c:k), total_cost(k-c+1:k+1),'r-');
+plot((1:k), input_cost(2:k+1),'k-');
+plot((1:k), lambda_sum(2:k+1),'b-');
+plot((1:k), total_cost(2:k+1),'r-');
 drawnow()
 hold off
 
@@ -17,4 +16,4 @@ legend({'Input Cost','Slack Cost','Total Cost'}, 'interpreter', 'latex');
 
 % Center graph
 m = 1.1*max(0.1, max(total_cost(2:end)));
-axis([k-c-1 k+1 0 m])
+axis([0 k+1 0 m])
