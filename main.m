@@ -9,7 +9,7 @@ input_dim = 2; % Size of Input Vector U_i
 state_dim = 4; % Size of State Vector (position and velocity) X_i
 
 % Bounds on Inpux and State Space Bounds
-umax = 10; % Max value for an input
+umax = 2; % Max value for an input
 
 % Time Steps
 time_horizon = 20;
@@ -17,22 +17,26 @@ time_step = 600 / time_horizon;
 
 % Initial States
 % Format: x, y, x., y.
-x_0_a = [ 95; -15; 0; 0]; 
-x_0_b = [140;   5; 0; 0]; 
-x_0_c = [ 55;  50; 0; 0]; 
-   
+x_0_a = [100; -15; 0; 0]; 
+x_0_b = [120;   5; 0; 0]; 
+x_0_c = [ 80;  20; 0; 0]; 
+
+% x_0_a = [106; -6; 0; 0]; 
+% x_0_b = [100;  0; 0; 0]; 
+% x_0_c = [ 96;  6; 0; 0]; 
+%%
 % Target Sets
 % Format: x, y, x., y.
 
 % MP 1: A, B, C 
 % MP 2: A, C, B 
 
-target_set_a = Polyhedron('lb', [- 2.5;  20; -0.01; -0.01], ...
-                          'ub', [  2.5;  25;  0.01;  0.01]);    
-target_set_c = Polyhedron('lb', [ 15; -15; -0.01; -0.01], ... 
-                          'ub', [ 20; -10;  0.01;  0.01]);   
-target_set_b = Polyhedron('lb', [-20; -15; -0.01; -0.01], ... 
-                          'ub', [-15; -10;  0.01;  0.01]);  
+target_set_a = Polyhedron('lb', [- 2.5;  15; -0.01; -0.01], ...
+                          'ub', [  2.5;  20;  0.01;  0.01]);    
+target_set_c = Polyhedron('lb', [ 10;   -10; -0.01; -0.01], ... 
+                          'ub', [ 15;    -5;  0.01;  0.01]);   
+target_set_b = Polyhedron('lb', [-15;   -10; -0.01; -0.01], ... 
+                          'ub', [-10;    -5;  0.01;  0.01]);  
  
 
 %% Generate LTI Systems
@@ -98,11 +102,11 @@ pwa_accuracy = 1e-3; % Set the maximum piecewise-affine overapproximation error 
 
 %%  Optimization Parameters
 % Max iterations
-kmax = 100;
+kmax = 250;
 k = 1;
 
 % Collision avoid region radius
-r = 5;
+r = 10;
 
 % Probailities of safety
 epsilon_collision = 1e-4; % 1 - \beta
@@ -113,9 +117,9 @@ epsilon_dc = 1e-6; % convergence in cost
 epsilon_lambda = 1e-6; % \sum_i,v lambda_i,v convergence to zero
 
 % Cost of slack variable
-tau = [.1; zeros(kmax -1, 1)];
+tau = [1; zeros(kmax -1, 1)];
 tau_max = 100;
-gamma = 1.25;
+gamma = 1.2;
 
 % Storage initial cost for convergence check
 input_cost = [1e20; zeros(kmax,1)];
@@ -123,9 +127,9 @@ lambda_sum = [1e20; zeros(kmax,1)];
 total_cost = [1e40; zeros(kmax,1)];
 
 %% Initial Condition
-U_a_p = zeros(size(Cu,2),1);
-U_b_p = zeros(size(Cu,2),1);
-U_c_p = zeros(size(Cu,2),1);
+U_a_p = ones(size(Cu,2),1);
+U_b_p = ones(size(Cu,2),1);
+U_c_p = ones(size(Cu,2),1);
 mean_X_a = mean_X_a_sans_input + Cu * U_a_p;
 mean_X_b = mean_X_b_sans_input + Cu * U_b_p;
 mean_X_c = mean_X_c_sans_input + Cu * U_c_p;
@@ -136,19 +140,20 @@ U_b_storage = zeros(size(Cu,2),kmax);
 U_c_storage = zeros(size(Cu,2),kmax);
 
 %% Set defaults for cvx
-cvx_solver mosek
-cvx_precision default
+cvx_solver gurobi
+cvx_precision best
 
 %% Iterative optimization problem
 tic;
 while k <= kmax 
-    fprintf('itteration: %d \n', k);
     
     % Update collision avoid probabilities and gradient
-    [l_g_ab, del_l_g_ab] = update_g(mean_X_a, mean_X_b, cov_X_sans_input, cov_X_sans_input, Cu, r);
-    [l_g_ac, del_l_g_ac] = update_g(mean_X_a, mean_X_c, cov_X_sans_input, cov_X_sans_input, Cu, r);
-    [l_g_bc, del_l_g_bc] = update_g(mean_X_b, mean_X_c, cov_X_sans_input, cov_X_sans_input, Cu, r);
+    [l_g_ab, del_l_g_ab] = update_g(mean_X_a, mean_X_b, cov_X_sans_input, cov_X_sans_input, Cu, r, time_horizon);
+    [l_g_ac, del_l_g_ac] = update_g(mean_X_a, mean_X_c, cov_X_sans_input, cov_X_sans_input, Cu, r, time_horizon);
+    [l_g_bc, del_l_g_bc] = update_g(mean_X_b, mean_X_c, cov_X_sans_input, cov_X_sans_input, Cu, r, time_horizon);
     
+    fprintf('iteration: %d ', k);
+
     cvx_begin quiet
         variable U_a(sys.input_dim * time_horizon,1);
         variable U_b(sys.input_dim * time_horizon,1);
@@ -170,7 +175,7 @@ while k <= kmax
         variable norminvover_b(n_lin_state_b, 1);
         variable norminvover_c(n_lin_state_c, 1);
 
-        minimize (U_a'*U_a + U_b'*U_b + U_c'*U_c + tau(k)*(sum(lambda_i_ab) + sum(lambda_i_ac) + sum(lambda_i_bc)) )
+        minimize (tau(k)*(sum(lambda_i_ab) + sum(lambda_i_ac) + sum(lambda_i_bc)) + U_a'*U_a + U_b'*U_b + U_c'*U_c)
         subject to
             %----------------------------
             % Linear equations defining the state
@@ -208,7 +213,7 @@ while k <= kmax
             %----------------------------
             % Terminal state constraint
             %----------------------------
-            
+
             %  Approximation of inverse normal in convex region
             for delta_i_indx = 1:n_lin_state_a
                 norminvover_a(delta_i_indx) >= invcdf_approx_m.* delta_i_a(delta_i_indx) + invcdf_approx_c;
@@ -246,10 +251,10 @@ while k <= kmax
     
     % Calculate convergence criteria
     conv_check = abs(input_cost(k+1) - input_cost(k) + tau(k)*(lambda_sum(k+1) - lambda_sum(k)));
-    
+    fprintf('\t %e', conv_check);
+    fprintf('\t %e \n', lambda_sum(k+1));
     % Check for solved status
     if strcmpi(cvx_status, 'Solved')
-        
         % Check for convergence
         if (conv_check <= epsilon_dc) && (lambda_sum(k+1) <= epsilon_lambda)                 
            break
@@ -284,11 +289,12 @@ time = toc;
 k = min(k, kmax);
 
 %% Print some useful information
-fprintf('Complete \n');
+fprintf('\n %s \n', cvx_status);
 fprintf('Computation time (min): %f \n', time / 60);
-fprintf('Locally Optimal Cost: %f \n', total_cost(k+1));
-
-%% Make Grpahs
+fprintf('Optimal Total Cost: %f \n', total_cost(k+1));
+fprintf('Optimal Slack Cost: %f \n', lambda_sum(k+1));
+fprintf('Optimal Input Cost: %f \n', input_cost(k+1));
+%% Make Grpahs 
 motion_path_graph
-cost_graph
 distance_graph
+cost_graph

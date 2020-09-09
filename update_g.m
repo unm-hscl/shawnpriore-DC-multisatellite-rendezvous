@@ -1,60 +1,41 @@
-function [log_g, del_log_g] = update_g(mu_1, mu_2, sigma_1, sigma_2, Cu, r)
+function [log_g, del_log_g] = update_g(mu_1, mu_2, sigma_1, sigma_2, Cu, r, time_horizon)
     % calculate and extract input
     mu = mu_1 - mu_2;
-    mu_x = mu(1:4:end);
-    mu_y = mu(2:4:end);
-    
-    mu_x_pr = mu_x + r;
-    mu_y_pr = mu_y + r;
-    mu_x_mr = mu_x - r;
-    mu_y_mr = mu_y - r;
-    
     sigma = sigma_1 + sigma_2;
-    sigmad = diag(sigma);
-    sigmad_x = sigmad(1:4:end);
-    sigmad_y = sigmad(2:4:end);
     
-    min_P = 1e-10;
-    min_p = 1e-15;
+    % memory holders
+    P = zeros(time_horizon, 1);
+    gradient_P = zeros(time_horizon, time_horizon * 2);
+    
+    % iterate through time index
+    for i = 1:time_horizon
+        % get relavent indexes
+        index = 4*(i-1) + (1:2);
         
-    % Calculate Prob(in collision region on axis)
-    P_x = normcdf(mu_x_pr ./ sqrt(sigmad_x)) - normcdf(mu_x_mr ./ sqrt(sigmad_x));
-    P_y = normcdf(mu_y_pr ./ sqrt(sigmad_y)) - normcdf(mu_y_mr ./ sqrt(sigmad_y));
-    % Calculate derivative of Prob(in collision region on axis)
-    p_x = normpdf(mu_x_pr ./ sqrt(sigmad_x)) - normpdf(mu_x_mr ./ sqrt(sigmad_x));
-    p_y = normpdf(mu_y_pr ./ sqrt(sigmad_y)) - normpdf(mu_y_mr ./ sqrt(sigmad_y));  
-    
-    change_x = (p_x < min_p);
-    change_y = (p_y < min_p);
-	P_x = max(P_x, min_P);
-	P_y = max(P_y, min_P);
+        % calculate L_2 norm of mean
+        mu_i = mu(index);
+        mu_i_2norm = norm(mu_i); 
+        
+        % calculate frobenius norm of Sigma^{1/2}
+        sigma_i = sigma(index,index);
+        sigma_i_chol = chol(sigma_i);
+        sigma_i_fnorm = norm(sigma_i_chol, 'fro');
+        
+        % get indexed row of controlability matrix
+        Cu_i_1 = Cu(index(1), :);
+        Cu_i_2 = Cu(index(2), :);
+        
+        % calculate Prob{|| \nu || <= (r - || \mu ||) / || \Sigma^1/2} ||_F }
+        P(i) = raylcdf(max(r - mu_i_2norm, 1e-10) / sigma_i_fnorm, 1);
 
-    if sum(change_x) > 0
-        sign_mu_x = -sign(mu_x);
-        p_x(change_x) = sign_mu_x(change_x) * min_p;
-    end
-    if sum(change_y) > 0
-        sign_mu_y = -sign(mu_y);
-        p_y(change_y) = sign_mu_y(change_y) * min_p;
+        % calculate gradient of above probability
+        gradient_P(i,:) = max(raylpdf((r - mu_i_2norm)/ sigma_i_fnorm, 1), 1e-12) * ...
+            (Cu_i_1 * mu_i(1) + Cu_i_2 * mu_i(2)) / ...
+            (sigma_i_fnorm * mu_i_2norm);
     end
     
-    % Calculate Prob(in collision region)
-    P_in = P_x.*P_y;
-        
-    % Extract line from controllability matrix
-    C_x = Cu(1:4:end,:);
-    C_y = Cu(2:4:end,:);
-    
-    % Calculate gradients
-    del_g_1 = (C_y ./ sqrt(sigmad(2:4:end)) .* (P_x .* -p_y)) + ...
-              (C_x ./ sqrt(sigmad(1:4:end)) .* (P_y .* -p_x)) ./ ...
-              P_in;
-    del_g_2 = (C_y ./ sqrt(sigmad(2:4:end)) .* (P_x .*  p_y)) + ...
-              (C_x ./ sqrt(sigmad(1:4:end)) .* (P_y .*  p_x)) ./ ...
-              P_in;
-    
-    % Return probability and gradient
-    log_g = log(P_in);
-    del_log_g = [del_g_1, del_g_2];
+    % log for concave functions
+    log_g = log(P);
+    del_log_g = [-gradient_P, gradient_P] ./ P;
 end
 
