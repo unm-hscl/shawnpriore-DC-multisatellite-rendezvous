@@ -1,46 +1,71 @@
 %% Plot of Motion Path
-function motion_path_graph(all_a, all_b, all_c, target_set_a, target_set_b, target_set_c, have_legend)
-    % make graph
-    figure();
-    hold on
-
-    % plot path lines
-    for i = 1:size(all_a,2)
-        plot(all_a(1:4:end, i), all_a(2:4:end, i), 'k-o');
-    end
-    for i = 1:size(all_b,2)
-        plot(all_b(1:4:end, i), all_b(2:4:end, i), 'b-o');
-    end
-    for i = 1:size(all_c,2)
-        plot(all_c(1:4:end, i), all_c(2:4:end, i), 'r-o');
-    end
-
-    % mark starting points and plot target regions
-    plot(all_a(1, 1), all_a(2, 1), 'ko', 'MarkerFaceColor', 'k');
-    plot( polyshape(Polyhedron(target_set_a.A([1;2;5;6],1:2), target_set_a.b([1;2;5;6])).V),...
-        'FaceColor', 'k', ...
-        'FaceAlpha',0.1); 
-
-    plot(all_b(1, 1), all_b(2, 1), 'bo', 'MarkerFaceColor', 'b');
-    plot( polyshape(Polyhedron(target_set_b.A([1;2;5;6],1:2), target_set_b.b([1;2;5;6])).V),...
-        'FaceColor', 'b', ...
-        'FaceAlpha',0.1); 
+function motion_path_graph(all_a, all_b, all_c, all_a_pc, all_b_pc, all_c_pc, target_set_a, target_set_b, target_set_c, particles)
     
-    plot(all_c(1, 1), all_c(2, 1), 'ro', 'MarkerFaceColor', 'r');
-    plot( polyshape(Polyhedron(target_set_c.A([1;2;5;6],1:2), target_set_c.b([1;2;5;6])).V),...
-        'FaceColor', 'r', ...
+    red = [0.4660 0.6740 0.1880];
+    blue = [0.3010 0.7450 0.9330];
+    green = [0.6350 0.0780 0.1840];
+    
+    % make graph
+    fig = figure();
+    fig.Units    = 'inches';
+    fig.Position = [0.75,6,10,11.25];
+    
+    subplot(2,1,1);
+    hold on
+    p1 = plot(all_a(1:4:end), all_a(2:4:end), 'Color', red, 'Marker', 'h', 'LineWidth', 1);
+    p2 = plot(all_b(1:4:end), all_b(2:4:end), 'Color', blue, 'Marker', 'p', 'LineWidth', 1);
+    p3 = plot(all_c(1:4:end), all_c(2:4:end), 'Color', green, 'Marker', '^', 'LineWidth', 1);
+    p4 = plot(all_a(1, 1), all_a(2, 1), 'Color', red, 'Marker', 'h', 'MarkerFaceColor', 'k');
+    plot(all_b(1, 1), all_b(2, 1), 'Color', blue, 'Marker', 'p', 'MarkerFaceColor', 'k');
+    plot(all_c(1, 1), all_c(2, 1), 'Color', green, 'Marker', '^', 'MarkerFaceColor', 'k');
+    p5 = plot( polyshape(Polyhedron(target_set_a.A([1;2;5;6],1:2), target_set_a.b([1;2;5;6])).V),...
+        'FaceColor', red, ...
         'FaceAlpha',0.1); 
-
-    % draw graph
+    plot( polyshape(Polyhedron(target_set_b.A([1;2;5;6],1:2), target_set_b.b([1;2;5;6])).V),...
+        'FaceColor', blue, ...
+        'FaceAlpha',0.1); 
+    plot( polyshape(Polyhedron(target_set_c.A([1;2;5;6],1:2), target_set_c.b([1;2;5;6])).V),...
+        'FaceColor', green, ...
+        'FaceAlpha',0.1); 
+    xlabel('x (in meters)')
+    ylabel('y (in meters)')
     drawnow()
+    axis([-20 120 -15 25])
     hold off
+    set(gca, 'OuterPosition', [0.01,0.47,0.98,0.45]);
 
-    % Fancy labels
-    xlabel('$x$ (in meters)', 'interpreter', 'latex')
-    ylabel('$y$ (in meters)', 'interpreter', 'latex')
-    if have_legend == 1
-        legend({'Vehicle A', 'Vehicle B', 'Vehicle C', 'Initial Location', 'Target Set' }, ...
-            'interpreter', 'latex', ...
-            'Location', 'northeast');
-    end    
+
+    subplot(2,1,2);
+    hold on
+    for i = 1:particles
+        plot(all_a_pc(1:4:end,i), all_a_pc(2:4:end,i), 'LineStyle', '--', 'Color', red, 'Marker', 'h', 'LineWidth', 1);
+        plot(all_b_pc(1:4:end,i), all_b_pc(2:4:end,i), 'LineStyle', '--', 'Color', blue, 'Marker', 'p', 'LineWidth', 1);
+        plot(all_c_pc(1:4:end,i), all_c_pc(2:4:end,i), 'LineStyle', '--', 'Color', green, 'Marker', '^', 'LineWidth', 1);
+    end
+    plot(all_a_pc(1, 1), all_a_pc(2, 1), 'Color', red, 'Marker', 'h', 'MarkerFaceColor', 'k');
+    plot(all_b_pc(1, 1), all_b_pc(2, 1), 'Color', blue, 'Marker', 'p', 'MarkerFaceColor', 'k');
+    plot(all_c_pc(1, 1), all_c_pc(2, 1), 'Color', green, 'Marker', '^', 'MarkerFaceColor', 'k');
+    plot( polyshape(Polyhedron(target_set_a.A([1;2;5;6],1:2), target_set_a.b([1;2;5;6])).V),...
+        'FaceColor', red, ...
+        'FaceAlpha',0.1); 
+    plot( polyshape(Polyhedron(target_set_b.A([1;2;5;6],1:2), target_set_b.b([1;2;5;6])).V),...
+        'FaceColor', blue, ...
+        'FaceAlpha',0.1); 
+    plot( polyshape(Polyhedron(target_set_c.A([1;2;5;6],1:2), target_set_c.b([1;2;5;6])).V),...
+        'FaceColor', green, ...
+        'FaceAlpha',0.1); 
+    xlabel('x (in meters)')
+    ylabel('y (in meters)')
+    drawnow()
+    axis([-20 120 -15 25])
+    hold off
+    set(gca, 'OuterPosition', [0.01,0.01,0.98,0.45]);
+
+    l = legend([p1,p2,p3,p4,p5], {'Vehicle A', 'Vehicle B', 'Vehicle C', 'Initial Location', 'Target Set' },...
+        'Orientation','horizontal');
+    set(l,'Position', [0.05,0.94,0.9,0.04],'Units', 'normalized');
+
+    set(fig.Children, ...
+        'FontName',     'Times', ...
+        'FontSize',     20);
 end

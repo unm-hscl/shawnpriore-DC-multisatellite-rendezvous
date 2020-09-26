@@ -4,7 +4,7 @@
 
 %% parameters
 % number of particles
-N = 50; 
+N = 10; 
 
 % big M arbitrary constant
 large_constant = 5000;
@@ -90,9 +90,9 @@ cvx_begin
                 sum(c_bc(4*(t-1) + (1:4) , i)) - (size(Avoid_A,1) - 1) <= sc_bc(t, i);
             end
 
-            sum(sc_ab(:,i)) <= ssc_ab(i);
-            ssc_ac(i) <= sum(sc_ac(:,i)) - (time_horizon - 1);
-            ssc_bc(i) <= sum(sc_bc(:,i)) - (time_horizon - 1);
+            sum(sc_ab(:,i)) <= time_horizon * ssc_ab(i);
+            sum(sc_ac(:,i)) <= time_horizon * ssc_ac(i);
+            sum(sc_bc(:,i)) <= time_horizon * ssc_bc(i);
         end
 
         1/N * sum(t_a) <= 1 - alpha;
@@ -106,16 +106,11 @@ cvx_begin
 cvx_end;
 blackmore_time_to_solve = toc(tstart);
 
-% verification
+%% verification
 if strcmpi(cvx_status,'Solved')
     problem(1).input = U_a_bl;
     problem(2).input = U_b_bl;
     problem(3).input = U_c_bl;
 
-    verification_bl = verify(10e5, sys, time_horizon, "Linf", r, problem);
+    verification_bl = verify(10e5, sys, time_horizon, "linf", r, problem);
 end
-
-%% make graphs particle control
-motion_path_graph( ...
-    [x_0_a; mean_X_a_bl], [x_0_b; mean_X_b_bl], [x_0_c; mean_X_c_bl],...
-    target_set_a, target_set_b, target_set_c, 1);

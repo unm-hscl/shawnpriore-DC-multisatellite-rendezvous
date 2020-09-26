@@ -13,13 +13,13 @@ function [g, del_g] = update_g(mu_1, mu_2, Cu, time_horizon)
         
         % calculate L_2 norm of mean
         mu_i = mu(index);
-        g(i) = norm(mu_i); 
+        g(i) = norm(mu_i)^2; 
         
         % get indexed rows of controlability matrix
         Cu_i = Cu(index, :);
         
         % calculate gradient of norm
-        gradient_g(i,:) = mu_i' * Cu_i ./ g(i);
+        gradient_g(i,:) = 2 * mu_i' * Cu_i ;
     end
     
     % compile gradient w.r.t u_1 and u_2

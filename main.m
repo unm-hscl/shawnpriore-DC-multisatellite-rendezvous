@@ -13,8 +13,8 @@ state_dim = 4; % size of state vector (position and velocity) X_i
 umax = 2; % max absolute value for an input
 
 % time steps
-time_horizon = 10; % number of steps from initial condition to completion
-time_step = 300 / time_horizon; % 6 minutes total split into even sections
+time_horizon = 15; % number of steps from initial condition to completion
+time_step = 450 / time_horizon; % 6 minutes total split into even sections
 
 % initial states
 % format: x, y, x., y.
@@ -124,12 +124,13 @@ scaled_sigma_c_vec = norms(target_set_c.A * sqrt_cov_X_sans_input',2,2);
 sigma_norm_lb = zeros(time_horizon, 1);
 for i = 1:time_horizon
     index = 4*(i-1) + (1:2); 
-    e = eig(chol(2 * cov_X_sans_input(index, index)));
+    e = eig(2 * cov_X_sans_input(index, index));
     sigma_norm_lb(i) =  min(e);
 end
 
 % bound = r + \Phi^{-1}_{Rayl}(\alpha)||(Sigma_a[t] + Sigma_b[t])^1/2||_lb
-collision_avoid_lb = r + raylinv(alpha, 1)*sigma_norm_lb;
+collision_avoid_lb = r + raylinv(alpha, 1)*sqrt(sigma_norm_lb);
+collision_avoid_lb_sq = collision_avoid_lb.^2;
 
 %% obtain the piecewise linear overapproximation of norminvcdf in [0,0.5]
 pwa_accuracy = 1e-3; % Set the maximum piecewise-affine overapproximation error to 1e-3
@@ -149,7 +150,7 @@ tic;
 k = 1;
 while k <= kmax 
     fprintf('iteration: %d ', k);
-    
+
     % update collision avoid probabilities and gradient
     [g_ab, del_g_ab] = update_g(mean_X_a, mean_X_b, Cu, time_horizon);
     [g_ac, del_g_ac] = update_g(mean_X_a, mean_X_c, Cu, time_horizon);
@@ -203,12 +204,12 @@ while k <= kmax
             lambda_i_ac >= 0;
             lambda_i_bc >= 0;
 
-            0 - (- g_ab - del_g_ab * [U_a - U_a_p;U_b - U_b_p]) >= ...
-                collision_avoid_lb - lambda_i_ab;
-            0 - (- g_ac - del_g_ac * [U_a - U_a_p;U_c - U_c_p]) >= ...
-                collision_avoid_lb - lambda_i_ac;
-            0 - (- g_bc - del_g_bc * [U_b - U_b_p;U_c - U_c_p]) >= ...
-                collision_avoid_lb - lambda_i_bc;
+            g_ab + del_g_ab * [U_a - U_a_p;U_b - U_b_p] >= ...
+                collision_avoid_lb_sq - lambda_i_ab;
+            g_ac + del_g_ac * [U_a - U_a_p;U_c - U_c_p] >= ...
+                collision_avoid_lb_sq - lambda_i_ac;
+            g_bc + del_g_bc * [U_b - U_b_p;U_c - U_c_p] >= ...
+                collision_avoid_lb_sq - lambda_i_bc;
 
             %----------------------------
             % terminal state constraint
@@ -309,12 +310,21 @@ if strcmpi(cvx_status, 'Solved')
     verification_dc = verify(10e5, sys, time_horizon, "L2", r, problem);
 end
 
+
+%% run particle control
+particle_control
+
 %% make graphs Our method
 motion_path_graph( ...
     [x_0_a; mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
+    [repmat(x_0_a,1,N); mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
     target_set_a, target_set_b, target_set_c, 1);
 distance_graph(...
     [x_0_a; mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
-    r, time_horizon, collision_avoid_lb);
+    [x_0_a; mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
+    r, time_horizon, collision_avoid_lb, 1);
 cost_graph
-cum_cost
+cum_cost(...
+    U_a, U_b, U_c,...
+    U_a_bl, U_b_bl, U_c_bl, ...
+    time_horizon);
