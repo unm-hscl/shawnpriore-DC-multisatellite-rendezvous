@@ -84,8 +84,7 @@ sysnoi = LtvSystem('StateMatrix',sys.state_mat, ...
 % compute the input concatenated transformations
 [A, Cu, Cw] = getConcatMats(sys, time_horizon);
 
-% compute mean_X_sans_input, cov_X_sans_input
-
+% compute mean trajectories without input
 X_a_sans_input_rv = SReachFwd('concat-stoch', sysnoi, x_0_a, time_horizon);
 X_b_sans_input_rv = SReachFwd('concat-stoch', sysnoi, x_0_b, time_horizon);
 X_c_sans_input_rv = SReachFwd('concat-stoch', sysnoi, x_0_c, time_horizon);
@@ -98,6 +97,7 @@ mean_X_a_sans_input = mean_X_a_sans_input(sysnoi.state_dim+1:end);
 mean_X_b_sans_input = mean_X_b_sans_input(sysnoi.state_dim+1:end);
 mean_X_c_sans_input = mean_X_c_sans_input(sysnoi.state_dim+1:end);
 
+% compute covariance of x 
 cov_X_sans_input = X_a_sans_input_rv.cov();
 cov_X_sans_input = cov_X_sans_input(sysnoi.state_dim+1:end, sysnoi.state_dim+1:end);
 
@@ -136,7 +136,7 @@ collision_avoid_lb_sq = collision_avoid_lb.^2;
 pwa_accuracy = 1e-3; % Set the maximum piecewise-affine overapproximation error to 1e-3
 [invcdf_approx_m, invcdf_approx_c, lb_delta_i] = computeNormCdfInvOverApprox(0.5, pwa_accuracy, n_lin_state_a);
 
-%% initial mean vector for given initial condition
+%% initial trajectory with input
 mean_X_a = mean_X_a_sans_input + Cu * U_a_p;
 mean_X_b = mean_X_b_sans_input + Cu * U_b_p;
 mean_X_c = mean_X_c_sans_input + Cu * U_c_p;
@@ -317,14 +317,14 @@ particle_control
 %% make graphs Our method
 motion_path_graph( ...
     [x_0_a; mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
-    [repmat(x_0_a,1,N); mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
+    [repmat(x_0_a,1,N); x_a_bl], [repmat(x_0_b,1,N); x_b_bl], [repmat(x_0_c,1,N); x_c_bl],...
     target_set_a, target_set_b, target_set_c, 1);
 distance_graph(...
     [x_0_a; mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
-    [x_0_a; mean_X_a], [x_0_b; mean_X_b], [x_0_c; mean_X_c],...
+    [repmat(x_0_a,1,N); x_a_bl], [repmat(x_0_b,1,N); x_b_bl], [repmat(x_0_c,1,N); x_c_bl],...
     r, time_horizon, collision_avoid_lb, 1);
-cost_graph
 cum_cost(...
     U_a, U_b, U_c,...
     U_a_bl, U_b_bl, U_c_bl, ...
     time_horizon);
+cost_graph %used as a sanity check for convergence

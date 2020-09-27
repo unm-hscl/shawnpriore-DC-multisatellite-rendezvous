@@ -1,4 +1,4 @@
-%% Blackmore TRo 2011 Code to stay in a feasible set. 
+%% Blackmore 2011 for goal achievement and collision avoidance
 % Primary Coder: Vignesh Sivaramakrishnan
 % Modified by: Shawn Priore
 
