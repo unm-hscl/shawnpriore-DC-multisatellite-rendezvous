@@ -39,7 +39,7 @@ target_set_c = Polyhedron('lb', [ 10;   -10; -0.01; -0.01], ...
                           'ub', [ 15;    -5;  0.01;  0.01]);   
 
 % collision avoid region radius
-r = run;
+r = 10;
 
 % safety thresholds
 alpha = .9; % collision avoidance
