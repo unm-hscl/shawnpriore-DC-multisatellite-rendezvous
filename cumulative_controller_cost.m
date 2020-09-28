@@ -1,4 +1,4 @@
-function cum_cost(U_a, U_b, U_c, U_a_pc, U_b_pc, U_c_pc, time_horizon)
+function cumulative_controller_cost(U_a, U_b, U_c, U_a_pc, U_b_pc, U_c_pc, time_horizon)
 	
     red = [0.4660 0.6740 0.1880];
     blue = [0.3010 0.7450 0.9330];

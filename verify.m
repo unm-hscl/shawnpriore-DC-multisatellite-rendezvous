@@ -52,17 +52,17 @@ function results = verify(samples, sys, time_horizon, norm_choice, r, problem)
     if strcmpi(norm_choice, "L2")
         for t = 1:time_horizon
             for i = 1:samples
-                norms_ab(t, i) = norm( diff_ab(4*(t-1) + (1:2), i) );
-                norms_ac(t, i) = norm( diff_ac(4*(t-1) + (1:2), i) );
-                norms_bc(t, i) = norm( diff_bc(4*(t-1) + (1:2), i) );
+                norms_ab(t, i) = norm( diff_ab(4*t + (1:2), i) );
+                norms_ac(t, i) = norm( diff_ac(4*t + (1:2), i) );
+                norms_bc(t, i) = norm( diff_bc(4*t + (1:2), i) );
             end
         end
     elseif strcmpi(norm_choice, "Linf")
         for t = 1:time_horizon
             for i = 1:samples
-                norms_ab(t, i) = norm( diff_ab(4*(t-1) + (1:2), i) , Inf );
-                norms_ac(t, i) = norm( diff_ac(4*(t-1) + (1:2), i) , Inf );
-                norms_bc(t, i) = norm( diff_bc(4*(t-1) + (1:2), i) , Inf );
+                norms_ab(t, i) = norm( diff_ab(4*t + (1:2), i) , Inf );
+                norms_ac(t, i) = norm( diff_ac(4*t + (1:2), i) , Inf );
+                norms_bc(t, i) = norm( diff_bc(4*t + (1:2), i) , Inf );
             end
         end
     end

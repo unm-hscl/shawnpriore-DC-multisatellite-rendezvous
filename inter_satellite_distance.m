@@ -1,5 +1,5 @@
 %% Graph of distance at each time point
-function distance_graph(all_a, all_b, all_c, all_a_pc, all_b_pc, all_c_pc, r, time_horizon, collision_avoid_lb, particles)
+function inter_satellite_distance(all_a, all_b, all_c, all_a_pc, all_b_pc, all_c_pc, r, time_horizon, collision_avoid_lb, particles)
     % Create empty vector
     dist_ab = zeros(time_horizon,1);
     dist_ac = zeros(time_horizon,1);
@@ -43,7 +43,7 @@ function distance_graph(all_a, all_b, all_c, all_a_pc, all_b_pc, all_c_pc, r, ti
     % Plot graph
     fig = figure();
     fig.Units    = 'inches';
-    fig.Position = [0.75,0,10,11.25];
+    fig.Position = [0.75,-1,10,11.25];
 
     
     subplot(2,1,1);

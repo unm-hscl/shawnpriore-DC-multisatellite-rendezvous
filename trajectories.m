@@ -1,5 +1,5 @@
 %% Plot of Motion Path
-function motion_path_graph(all_a, all_b, all_c, all_a_pc, all_b_pc, all_c_pc, target_set_a, target_set_b, target_set_c, particles)
+function trajectories(all_a, all_b, all_c, all_a_pc, all_b_pc, all_c_pc, target_set_a, target_set_b, target_set_c, particles)
     
     red = [0.4660 0.6740 0.1880];
     blue = [0.3010 0.7450 0.9330];
@@ -8,7 +8,7 @@ function motion_path_graph(all_a, all_b, all_c, all_a_pc, all_b_pc, all_c_pc, ta
     % make graph
     fig = figure();
     fig.Units    = 'inches';
-    fig.Position = [0.75,6,10,11.25];
+    fig.Position = [0.75,-1,10,11.25];
     
     subplot(2,1,1);
     hold on
