@@ -1,4 +1,4 @@
-function results = dc_solver(problem)
+function results = dc_solver(problem, quiet)
     % assign variables
     time_horizon = problem.time_horizon;
     
@@ -54,8 +54,7 @@ function results = dc_solver(problem)
     tic;
     k = 1;
     while k <= kmax 
-        fprintf('iteration: %d ', k);
-
+        
         % update collision avoid probabilities and gradient
         if k ~= 1
             [g_ab, del_g_ab] = update_g(mean_X_a, mean_X_b, Cu, time_horizon);
@@ -167,8 +166,11 @@ function results = dc_solver(problem)
         conv_check = abs(input_cost(k+1) - input_cost(k) + tau(k)*(lambda_sum(k+1) - lambda_sum(k)));
 
         % print statistics
-        fprintf('\t %e', conv_check); 
-        fprintf('\t %e \n', lambda_sum(k+1));
+        if ~ quiet
+            fprintf('iteration: %d ', k);
+            fprintf('\t %e', conv_check); 
+            fprintf('\t %e \n', lambda_sum(k+1));
+        end
 
         % check for solved status
         if strcmpi(cvx_status, 'Solved')

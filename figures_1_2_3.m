@@ -1,4 +1,4 @@
-%% clear system and vars
+% clear system and vars
 clc; 
 clear;
 close all;
@@ -39,7 +39,7 @@ target_set_c = Polyhedron('lb', [ 10;   -10; -0.01; -0.01], ...
                           'ub', [ 15;    -5;  0.01;  0.01]);   
 
 % collision avoid region radius
-r = run;
+r = 10;
 
 % safety thresholds
 alpha = .9; % collision avoidance
@@ -189,7 +189,7 @@ problem_dc.U_a_init = U_a_init;
 problem_dc.U_b_init = U_b_init;
 problem_dc.U_c_init = U_c_init;
 
-results_dc = dc_solver(problem_dc);
+results_dc = dc_solver(problem_dc, 0);
 
 %% verification dc
 if strcmpi(results_dc.status, 'Solved')
