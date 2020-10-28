@@ -114,7 +114,6 @@ n_lin_state_a = size(target_set_a.A,1);
 n_lin_state_b = size(target_set_b.A,1);
 n_lin_state_c = size(target_set_c.A,1);
 
-
 %% compute \sqrt{h_i^\top * \Sigma_X_no_input * h_i} = ||\sqrt\Sigma_X*h_i||
 [sqrt_cov_X_no_input, p] = chol(cov_X_no_input(end-3:end,end-3:end));
 
@@ -146,49 +145,59 @@ pwa_accuracy = 1e-3; % Set the maximum piecewise-affine overapproximation error 
 
 %% set up and solve problem
 
+% time horizon
 problem_dc.time_horizon = time_horizon;
 
+% controllability matrix
 problem_dc.Cu = Cu;
 
+% optimization parameters
 problem_dc.collision_avoid_lb_sq = collision_avoid_lb_sq;
-
 problem_dc.tau = tau;
 problem_dc.beta = beta;
 problem_dc.epsilon_dc = epsilon_dc;
 problem_dc.epsilon_lambda = epsilon_lambda;
+problem_dc.kmax = kmax;
 
+% input space \mathcal{U}
 problem_dc.input_space_A = input_space_A;
 problem_dc.input_space_b = input_space_b;
 
-problem_dc.kmax = kmax;
-
+% dimensions of system
 problem_dc.input_dim = input_dim;
 problem_dc.state_dim = state_dim;
 
+% affine overaproximation of N(0,1) \in [lb_delta, 0.5]
 problem_dc.invcdf_approx_m = invcdf_approx_m;
 problem_dc.invcdf_approx_c = invcdf_approx_c;
 problem_dc.lb_delta = lb_delta;
 
+% movement of autonomus system
 problem_dc.mean_X_a_no_input = mean_X_a_no_input;
 problem_dc.mean_X_b_no_input = mean_X_b_no_input;
 problem_dc.mean_X_c_no_input = mean_X_c_no_input;
 
+% dimension of target set
 problem_dc.n_lin_state_a = n_lin_state_a;
 problem_dc.n_lin_state_b = n_lin_state_b;
 problem_dc.n_lin_state_c = n_lin_state_c;
 
+% goal achievement quantile sigma
 problem_dc.scaled_sigma_a_vec = scaled_sigma_a_vec;
 problem_dc.scaled_sigma_b_vec = scaled_sigma_b_vec;
 problem_dc.scaled_sigma_c_vec = scaled_sigma_c_vec;
 
+% target sets
 problem_dc.target_set_a = target_set_a;
 problem_dc.target_set_b = target_set_b;
 problem_dc.target_set_c = target_set_c;
 
+% initial input (guess)
 problem_dc.U_a_init = U_a_init;
 problem_dc.U_b_init = U_b_init;
 problem_dc.U_c_init = U_c_init;
 
+% run optimization
 results_dc = dc_solver(problem_dc, 0);
 
 %% verification dc
