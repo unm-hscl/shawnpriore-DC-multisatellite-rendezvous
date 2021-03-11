@@ -140,7 +140,7 @@ for run = 1:runs
     for i = 1:time_horizon
         index = 4*(i-1) + (1:2); 
         e = eig(2 * cov_X_no_input(index, index));
-        sigma_norm_lb(i) =  sqrt(min(e));
+        sigma_norm_lb(i) =  sqrt(max(e));
     end
 
     % bound = r + \Phi^{-1}_{Rayl}(\alpha)||(Sigma_a[t] + Sigma_b[t])^1/2||_lb
@@ -197,7 +197,7 @@ for run = 1:runs
     problem_dc.U_c_init = U_c_init;
 
     results_dc = dc_solver(problem_dc, 1);
-    if strcmpi(results_dc.status, 'Solved')
+    if strcmpi(results_dc.status, 'Solved') && results_dc.lambda_sum(end) <= 1e-4
         costs(run) = results_dc.total_cost(end);
     else
         run = run - 1;

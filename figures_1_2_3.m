@@ -132,7 +132,7 @@ sigma_norm_lb = zeros(time_horizon, 1);
 for i = 1:time_horizon
     index = 4*(i-1) + (1:2); 
     e = eig(2 * cov_X_no_input(index, index));
-    sigma_norm_lb(i) =  sqrt(min(e));
+    sigma_norm_lb(i) =  sqrt(max(e));
 end
 
 % bound = r + \Phi^{-1}_{Rayl}(\alpha)||(Sigma_a[t] + Sigma_b[t])^1/2||_lb
